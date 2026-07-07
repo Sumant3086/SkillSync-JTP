@@ -227,7 +227,7 @@ def seed_data(db: Session):
             "bio": "Quality assurance specialist. Automated testing and continuous integration expert.",
             "experience": "mid-level", "years": 4, "availability": 25, "timezone": "UTC+0",
             "collab": "collaborative", "comm": "hybrid", "team": "medium (4-6)",
-            "skills": [("Testing", "advanced"), ("Python", "advanced"), ("JavaScript", "intermediate"), ("CI/CD", "advanced"), ("Selenium", "advanced")],
+            "skills": [("Testing", "advanced"), ("Python", "advanced"), ("JavaScript", "intermediate"), ("CI/CD", "advanced"), ("Docker", "advanced")],
             "interests": ["DevOps & Infrastructure", "SaaS Products", "API Development"]
         },
         {
@@ -398,7 +398,7 @@ def seed_data(db: Session):
             "bio": "Learning infrastructure automation. Eager to improve deployment processes.",
             "experience": "junior", "years": 1, "availability": 25, "timezone": "UTC-5",
             "collab": "collaborative", "comm": "sync", "team": "small (2-3)",
-            "skills": [("Docker", "beginner"), ("Git", "intermediate"), ("Linux", "intermediate"), ("CI/CD", "beginner")],
+            "skills": [("Docker", "beginner"), ("Git", "intermediate"), ("Python", "intermediate"), ("CI/CD", "beginner")],
             "interests": ["DevOps & Infrastructure", "Open Source", "API Development"]
         },
         {
