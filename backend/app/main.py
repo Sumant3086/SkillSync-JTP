@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.database.session import SessionLocal, wait_for_db
 from app.database.init_db import init_database, seed_data
+from app.api.endpoints import router
 
 
 # Create FastAPI application
@@ -12,6 +13,9 @@ app = FastAPI(
     description=settings.PROJECT_DESCRIPTION,
     version=settings.VERSION
 )
+
+# Include API routes
+app.include_router(router, prefix=settings.API_V1_PREFIX)
 
 # Configure CORS
 app.add_middleware(
