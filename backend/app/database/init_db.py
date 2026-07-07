@@ -96,11 +96,17 @@ def seed_data(db: Session):
     
     # Helper function to get skill by name
     def get_skill(name):
-        return next(s for s in skills if s.name == name)
+        try:
+            return next(s for s in skills if s.name == name)
+        except StopIteration:
+            raise ValueError(f"Skill '{name}' not found in skills list. Available skills: {[s.name for s in skills]}")
     
     # Helper function to get interest by name
     def get_interest(name):
-        return next(i for i in interests if i.name == name)
+        try:
+            return next(i for i in interests if i.name == name)
+        except StopIteration:
+            raise ValueError(f"Interest '{name}' not found in interests list")
     
     # Create 40 diverse synthetic collaborator profiles
     profiles_data = [
