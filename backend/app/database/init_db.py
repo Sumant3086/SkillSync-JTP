@@ -251,7 +251,7 @@ def seed_data(db: Session):
             "bio": "Protecting applications from vulnerabilities. Penetration testing and security audits.",
             "experience": "senior", "years": 7, "availability": 12, "timezone": "UTC+1",
             "collab": "independent", "comm": "async", "team": "small (2-3)",
-            "skills": [("Python", "advanced"), ("Cybersecurity", "expert"), ("AWS", "intermediate"), ("Docker", "intermediate")],
+            "skills": [("Python", "advanced"), ("Testing", "expert"), ("AWS", "intermediate"), ("Docker", "intermediate")],
             "interests": ["Cybersecurity", "DevOps & Infrastructure", "API Development"]
         },
         {
