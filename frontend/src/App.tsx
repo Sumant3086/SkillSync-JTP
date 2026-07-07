@@ -11,9 +11,7 @@ function App() {
   const [view, setView] = useState<View>('landing');
   const [matchResults, setMatchResults] = useState<MatchResponse | null>(null);
 
-  const handleStartMatching = () => {
-    setView('wizard');
-  };
+  const handleStartMatching = () => setView('wizard');
 
   const handleMatchComplete = (results: MatchResponse) => {
     setMatchResults(results);
@@ -34,25 +32,31 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-container">
-          <a href="#" className="logo" onClick={handleBackToHome}>
+          <button className="logo-btn" onClick={handleBackToHome}>
             SkillSync
-          </a>
-          <span className="tagline">Find the right collaborator</span>
+          </button>
+          <span className="tagline">Explainable Collaborator Matching</span>
         </div>
       </header>
 
       <main className="container">
         {view === 'landing' && <Landing onStart={handleStartMatching} />}
-        {view === 'wizard' && <MatchingWizard onComplete={handleMatchComplete} />}
+        {view === 'wizard' && (
+          <MatchingWizard onComplete={handleMatchComplete} onBack={handleBackToHome} />
+        )}
         {view === 'results' && matchResults && (
-          <Results results={matchResults} onNewSearch={handleNewSearch} />
+          <Results
+            results={matchResults}
+            onNewSearch={handleNewSearch}
+            onBackToHome={handleBackToHome}
+          />
         )}
       </main>
 
       <footer className="footer">
         <div className="footer-content">
-          <p>SkillSync - Explainable Collaborator Matching Platform</p>
-          <p>Developed for the JTP 2026 Project Round</p>
+          <p>SkillSync — Explainable Collaborator Matching Platform</p>
+          <p>JTP 2026 Project Round &nbsp;·&nbsp; Weighted multi-criteria algorithm &nbsp;·&nbsp; 40 synthetic profiles</p>
         </div>
       </footer>
     </div>

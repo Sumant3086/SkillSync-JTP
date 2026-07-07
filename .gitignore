@@ -1,6 +1,8 @@
-# Environment variables
-.env
-*.env
+# Environment variable overrides — .env.example files ARE committed
+# backend/.env is gitignored (contains DB creds only needed locally)
+# frontend/.env is NOT gitignored so the Docker build can read VITE_API_BASE_URL
+backend/.env
+!frontend/.env
 !.env.example
 
 # Python
@@ -37,7 +39,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Frontend build
+# Frontend build output
 frontend/dist/
 frontend/build/
 

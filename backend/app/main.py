@@ -1,4 +1,5 @@
 """SkillSync FastAPI application entry point."""
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -7,17 +8,31 @@ from app.database.init_db import init_database, seed_data
 from app.api.endpoints import router
 
 
-# Create FastAPI application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application startup and shutdown lifecycle."""
+    print("Starting SkillSync backend...")
+    wait_for_db()
+    init_database()
+    db = SessionLocal()
+    try:
+        seed_data(db)
+    finally:
+        db.close()
+    print("SkillSync backend ready!")
+    yield
+    # Shutdown: nothing to release
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
-    version=settings.VERSION
+    version=settings.VERSION,
+    lifespan=lifespan,
 )
 
-# Include API routes
 app.include_router(router, prefix=settings.API_V1_PREFIX)
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -27,43 +42,12 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on application startup."""
-    print("Starting SkillSync backend...")
-    
-    # Wait for database to be ready
-    wait_for_db()
-    
-    # Initialize database schema
-    init_database()
-    
-    # Seed data (idempotent)
-    db = SessionLocal()
-    try:
-        seed_data(db)
-    finally:
-        db.close()
-    
-    print("✓ SkillSync backend ready!")
-
-
 @app.get("/")
 def read_root():
-    """Root endpoint."""
+    """Root endpoint — service identity."""
     return {
         "name": settings.PROJECT_NAME,
         "description": settings.PROJECT_DESCRIPTION,
         "version": settings.VERSION,
-        "status": "running"
-    }
-
-
-@app.get("/api/health")
-def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "SkillSync Backend",
-        "database": "connected"
+        "status": "running",
     }

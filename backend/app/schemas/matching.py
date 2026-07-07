@@ -1,11 +1,11 @@
 """Pydantic schemas for matching API."""
 from typing import List, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class MatchPreferences(BaseModel):
     """User preferences for finding collaborators."""
-    
+
     user_skills: List[str] = Field(
         default=[],
         description="Skills the user already has"
@@ -44,24 +44,27 @@ class MatchPreferences(BaseModel):
         default=None,
         description="Communication preference: async, sync, hybrid"
     )
-    
-    @validator('preferred_experience')
-    def validate_experience(cls, v):
+
+    @field_validator('preferred_experience')
+    @classmethod
+    def validate_experience(cls, v: Optional[str]) -> Optional[str]:
         if v and v not in ['junior', 'mid-level', 'senior', 'lead']:
             raise ValueError('Invalid experience level')
-        return v
-    
-    @validator('collaboration_style')
-    def validate_collaboration(cls, v):
+        return v or None
+
+    @field_validator('collaboration_style')
+    @classmethod
+    def validate_collaboration(cls, v: Optional[str]) -> Optional[str]:
         if v and v not in ['collaborative', 'independent', 'flexible']:
             raise ValueError('Invalid collaboration style')
-        return v
-    
-    @validator('communication_preference')
-    def validate_communication(cls, v):
+        return v or None
+
+    @field_validator('communication_preference')
+    @classmethod
+    def validate_communication(cls, v: Optional[str]) -> Optional[str]:
         if v and v not in ['async', 'sync', 'hybrid']:
             raise ValueError('Invalid communication preference')
-        return v
+        return v or None
 
 
 class ScoreBreakdown(BaseModel):

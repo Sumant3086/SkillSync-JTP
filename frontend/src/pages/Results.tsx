@@ -4,9 +4,10 @@ import { MatchResponse, MatchResult } from '../types';
 interface ResultsProps {
   results: MatchResponse;
   onNewSearch: () => void;
+  onBackToHome: () => void;
 }
 
-function Results({ results, onNewSearch }: ResultsProps) {
+function Results({ results, onNewSearch, onBackToHome }: ResultsProps) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const toggleExpand = (profileId: number) => {
@@ -22,26 +23,39 @@ function Results({ results, onNewSearch }: ResultsProps) {
   return (
     <div className="results">
       <div className="results-header">
-        <h1>Your Matches</h1>
-        <p className="results-summary">
-          Evaluated {results.total_profiles_evaluated} profiles and found{' '}
-          {results.matches_returned} matches based on your preferences.
-        </p>
+        <div className="results-header-top">
+          <div>
+            <h1>Your Matches</h1>
+            <p className="results-summary">
+              Evaluated <strong>{results.total_profiles_evaluated}</strong> profiles and found{' '}
+              <strong>{results.matches_returned}</strong> best matches for your preferences.
+            </p>
+          </div>
+        </div>
         <div className="results-actions">
-          <button className="btn btn-secondary" onClick={onNewSearch}>
+          <button className="btn btn-secondary" onClick={onBackToHome}>
+            ← Home
+          </button>
+          <button className="btn btn-primary" onClick={onNewSearch}>
             Adjust Preferences
           </button>
         </div>
       </div>
 
-      {results.matches.map(match => (
-        <MatchCard
-          key={match.profile_id}
-          match={match}
-          expanded={expandedIds.has(match.profile_id)}
-          onToggle={() => toggleExpand(match.profile_id)}
-        />
-      ))}
+      {results.matches.length === 0 ? (
+        <div className="no-results">
+          <p>No matches found. Try broadening your preferences.</p>
+        </div>
+      ) : (
+        results.matches.map(match => (
+          <MatchCard
+            key={match.profile_id}
+            match={match}
+            expanded={expandedIds.has(match.profile_id)}
+            onToggle={() => toggleExpand(match.profile_id)}
+          />
+        ))
+      )}
     </div>
   );
 }
@@ -52,14 +66,57 @@ interface MatchCardProps {
   onToggle: () => void;
 }
 
+function getScoreColor(score: number): string {
+  if (score >= 70) return 'score-high';
+  if (score >= 45) return 'score-medium';
+  return 'score-low';
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function ScoreBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="breakdown-item">
+      <div className="breakdown-meta">
+        <span className="breakdown-label">{label}</span>
+        <span className={`breakdown-score ${getScoreColor(value)}`}>{value}%</span>
+      </div>
+      <div className="breakdown-bar-bg">
+        <div
+          className={`breakdown-bar-fill ${getScoreColor(value)}`}
+          style={{ width: `${Math.min(value, 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
   return (
     <div className="match-card">
       <div className="match-header">
-        <div className="match-rank">#{match.rank}</div>
-        <div className="match-score">
-          <div className="score-value">{match.overall_score}%</div>
-          <div className="score-label">Compatibility</div>
+        <div className="match-rank-block">
+          <div className="match-avatar">{getInitials(match.name)}</div>
+          <div className="match-rank">#{match.rank}</div>
+        </div>
+        <div className="match-score-block">
+          <div className={`score-value ${getScoreColor(match.overall_score)}`}>
+            {match.overall_score}%
+          </div>
+          <div className="score-label">Match</div>
+          <div className="score-bar-mini">
+            <div
+              className={`score-bar-fill ${getScoreColor(match.overall_score)}`}
+              style={{ width: `${match.overall_score}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -72,12 +129,12 @@ function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
           <div className="detail-item">
             <span className="detail-label">Experience</span>
             <span className="detail-value">
-              {match.experience_level} ({match.years_of_experience} years)
+              {match.experience_level} · {match.years_of_experience} yrs
             </span>
           </div>
           <div className="detail-item">
             <span className="detail-label">Availability</span>
-            <span className="detail-value">{match.weekly_availability_hours} hrs/week</span>
+            <span className="detail-value">{match.weekly_availability_hours} hrs / week</span>
           </div>
           <div className="detail-item">
             <span className="detail-label">Timezone</span>
@@ -100,10 +157,10 @@ function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
         <div className="match-highlights">
           {match.matched_skills.length > 0 && (
             <div className="highlight-section">
-              <div className="highlight-title">✓ Matched Skills</div>
+              <div className="highlight-title highlight-title--success">✓ Matched Skills</div>
               <div className="skill-tags">
                 {match.matched_skills.map(skill => (
-                  <span key={skill} className="tag">{skill}</span>
+                  <span key={skill} className="tag tag--success">{skill}</span>
                 ))}
               </div>
             </div>
@@ -111,10 +168,10 @@ function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
 
           {match.complementary_skills.length > 0 && (
             <div className="highlight-section">
-              <div className="highlight-title">+ Complementary Skills</div>
+              <div className="highlight-title highlight-title--info">+ Complementary Skills</div>
               <div className="skill-tags">
                 {match.complementary_skills.map(skill => (
-                  <span key={skill} className="tag">{skill}</span>
+                  <span key={skill} className="tag tag--info">{skill}</span>
                 ))}
               </div>
             </div>
@@ -122,10 +179,10 @@ function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
 
           {match.shared_interests.length > 0 && (
             <div className="highlight-section">
-              <div className="highlight-title">🎯 Shared Interests</div>
+              <div className="highlight-title highlight-title--primary">Shared Interests</div>
               <div className="interest-tags">
                 {match.shared_interests.map(interest => (
-                  <span key={interest} className="tag">{interest}</span>
+                  <span key={interest} className="tag tag--primary">{interest}</span>
                 ))}
               </div>
             </div>
@@ -160,35 +217,14 @@ function MatchCard({ match, expanded, onToggle }: MatchCardProps) {
 
         {expanded && (
           <div className="score-breakdown">
-            <h4 style={{ marginBottom: '0.75rem' }}>Detailed Score Breakdown</h4>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Skills</span>
-              <span className="breakdown-score">{match.score_breakdown.skills}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Interests</span>
-              <span className="breakdown-score">{match.score_breakdown.interests}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Availability</span>
-              <span className="breakdown-score">{match.score_breakdown.availability}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Collaboration Style</span>
-              <span className="breakdown-score">{match.score_breakdown.collaboration_style}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Communication</span>
-              <span className="breakdown-score">{match.score_breakdown.communication}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Timezone</span>
-              <span className="breakdown-score">{match.score_breakdown.timezone}%</span>
-            </div>
-            <div className="breakdown-item">
-              <span className="breakdown-label">Experience</span>
-              <span className="breakdown-score">{match.score_breakdown.experience}%</span>
-            </div>
+            <h4>Detailed Score Breakdown</h4>
+            <ScoreBar label="Skills Match" value={match.score_breakdown.skills} />
+            <ScoreBar label="Shared Interests" value={match.score_breakdown.interests} />
+            <ScoreBar label="Availability" value={match.score_breakdown.availability} />
+            <ScoreBar label="Collaboration Style" value={match.score_breakdown.collaboration_style} />
+            <ScoreBar label="Communication" value={match.score_breakdown.communication} />
+            <ScoreBar label="Timezone" value={match.score_breakdown.timezone} />
+            <ScoreBar label="Experience Level" value={match.score_breakdown.experience} />
           </div>
         )}
       </div>

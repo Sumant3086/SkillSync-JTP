@@ -8,7 +8,15 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     watch: {
-      usePolling: true
-    }
-  }
+      usePolling: true,
+    },
+    // Forward /api requests to the FastAPI backend during local development.
+    // In Docker this is handled by nginx instead.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

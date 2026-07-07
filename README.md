@@ -1,436 +1,244 @@
-# SkillSync
+# SkillSync — Explainable Collaborator Matching Platform
 
-**Find the right collaborator, not just another profile.**
+> JTP 2026 Project Round · Matching / Recommendation Service
 
-*Explainable Collaborator Matching Platform*
+SkillSync is a full-stack web application that matches users with compatible project collaborators using a **deterministic, multi-criteria weighted scoring algorithm**. Unlike black-box recommendation engines, every match comes with a transparent score breakdown and human-readable explanations.
 
 ---
 
-**Developed for the JTP 2026 Project Round**
+## Why This Project?
 
-## Project Overview
+Finding the right collaborator is hard. Most platforms filter by job title or a handful of skills. SkillSync goes deeper — evaluating **complementary** skills (what each side brings), **shared project interests**, **availability alignment**, **working style compatibility**, and **timezone fit**. The algorithm is fully explainable: you can see exactly why each person was ranked where they were.
 
-SkillSync is a full-stack web application that helps users find ideal project collaborators through intelligent, explainable matching. Unlike traditional platforms that rely solely on job titles or a handful of skills, SkillSync evaluates multiple compatibility dimensions to recommend the best collaborators for your project needs.
+---
 
-## Why This Project
+## Quick Start (Plug and Play)
 
-I chose to build a **Matching/Recommendation Service** because successful collaboration depends on much more than technical skills alone. SkillSync addresses the real-world problem of finding compatible collaborators by considering:
+**Requirements:** Docker Desktop installed and running.
 
-- Complementary skill sets
-- Shared project interests
-- Working style compatibility
-- Availability alignment
-- Timezone compatibility
-- Communication preferences
-- Experience level matching
-
-## What Makes SkillSync Special
-
-### Explainable Matching
-Every match comes with a complete breakdown showing exactly why a collaborator was recommended, including:
-- Overall compatibility percentage
-- Individual scoring dimensions
-- Matched and complementary skills
-- Shared interests
-- Clear match reasons
-- Honest trade-offs
-
-### Deterministic & Transparent
-No black-box algorithms or machine learning. The matching logic uses a weighted scoring system that produces consistent, explainable results that can be manually verified.
-
-### Complete Self-Contained Solution
-- Original synthetic dataset (40 diverse collaborator profiles)
-- No external API dependencies
-- Runs entirely offline after Docker images are built
-- Plug-and-play architecture
-
-## Technology Stack
-
-**Frontend:**
-- React 18 with TypeScript
-- Vite (build tool)
-- Original custom CSS
-- Fetch API
-
-**Backend:**
-- Python 3.11
-- FastAPI (REST API framework)
-- SQLAlchemy (ORM)
-- Pydantic (validation)
-- Uvicorn (ASGI server)
-- Pytest (testing)
-
-**Database:**
-- PostgreSQL 15
-
-**Infrastructure:**
-- Docker & Docker Compose
-- Custom bridge network
-- Persistent named volumes
-
-## Docker Architecture
-
-SkillSync uses a three-container architecture orchestrated by Docker Compose:
-
-### Services
-
-**database (PostgreSQL 15)**
-- Stores collaborator profiles, skills, and interests
-- Persistent volume: `skillsync-postgres-data`
-- Health check: `pg_isready`
-- Internal port: 5432
-
-**backend (FastAPI + Python 3.11)**
-- REST API and matching engine
-- Exposed port: 8000
-- Health check: `/api/health`
-- Depends on: database (waits for healthy status)
-- Connection retry: 30 attempts with 2s intervals
-
-**frontend (React + Nginx)**
-- Static React SPA served by Nginx
-- Exposed port: 5173 (maps to internal 80)
-- Multi-stage build (Node build → Nginx serve)
-- Health check: HTTP GET to /
-
-### Custom Network
-
-All services communicate through `skillsync-network`, a custom Docker bridge network. This enables:
-- Service discovery by name (e.g., `backend` can reach `database:5432`)
-- Network isolation
-- Container-to-container communication
-
-### Volume Persistence
-
-The `skillsync-postgres-data` volume ensures database persistence across container restarts. Seed data loads once and remains available.
-
-## Design Decisions
-
-### Why FastAPI?
-- Modern Python framework with excellent async support
-- Automatic OpenAPI documentation (/docs endpoint)
-- Built-in Pydantic validation
-- Fast and lightweight for API-only applications
-
-### Why PostgreSQL?
-- Robust relational database perfect for structured data
-- Excellent support for many-to-many relationships
-- Strong data integrity with foreign keys
-- Industry standard with wide Docker support
-
-### Why React + TypeScript?
-- Component-based architecture for reusable UI
-- Type safety prevents runtime errors
-- Modern tooling and development experience
-- Meets JTP requirement for modern JavaScript framework
-
-### Why No Machine Learning?
-- Explainability requirement—every score must be defensible
-- Deterministic results build user trust
-- No training data or model maintenance overhead
-- Weighted algorithm is transparent and auditable
-
-### Architecture Choices
-- **Three-tier separation:** Clear boundaries between presentation, logic, and data
-- **RESTful API:** Standard, well-understood interface
-- **Docker Compose:** Reproducible environments, plug-and-play deployment
-- **Custom CSS:** Original design, no templates or third-party UI libraries
-
-## Quick Start
-
-### Prerequisites
-- Docker
-- Docker Compose
-- Git
-
-### Installation & Running
-
-1. Clone the repository:
 ```bash
 git clone https://github.com/Sumant3086/SkillSync-JTP.git
 cd SkillSync-JTP
+docker-compose up --build
 ```
 
-2. Start the application:
-```bash
-docker compose up
-```
+| Service      | URL                          |
+|--------------|------------------------------|
+| Frontend     | http://localhost:5173         |
+| Backend API  | http://localhost:8000/api    |
+| API Docs     | http://localhost:8000/docs    |
 
-Or rebuild and start:
-```bash
-docker compose up --build
-```
+That is it. All three containers (database, backend, frontend) start automatically and connect through a custom Docker network (`skillsync-network`). The database is seeded with **40 synthetic profiles** on first run — no manual setup required.
 
-3. Access the application:
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8000
-- **API Documentation:** http://localhost:8000/docs
+---
 
-The application will automatically:
-- Initialize the database schema
-- Load synthetic collaborator profiles
-- Configure all services
-- Be ready to use
-
-## Project Structure
+## Architecture
 
 ```
-SkillSync-JTP/
-├── frontend/              # React TypeScript frontend
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── services/     # API client
-│   │   ├── types/        # TypeScript definitions
-│   │   └── styles/       # CSS files
-│   ├── Dockerfile
-│   └── package.json
-│
-├── backend/              # Python FastAPI backend
-│   ├── app/
-│   │   ├── api/         # API endpoints
-│   │   ├── core/        # Configuration
-│   │   ├── database/    # Database setup
-│   │   ├── models/      # SQLAlchemy models
-│   │   ├── schemas/     # Pydantic schemas
-│   │   ├── services/    # Business logic (matching engine)
-│   │   └── main.py      # Application entry point
-│   ├── tests/           # Pytest tests
-│   ├── Dockerfile
-│   └── requirements.txt
-│
-├── docker-compose.yml    # Multi-container orchestration
-├── .env.example         # Environment template
-├── .gitignore
-├── README.md
-├── REVIEW_GUIDE.md
-└── DEVELOPMENT_LOG.md
+Browser
+  │
+  └──► nginx (host :5173 → container :80)
+         │
+         ├── /api/* ──► FastAPI backend (container :8000)
+         │                    │
+         │                    └── PostgreSQL (container :5432)
+         │
+         └── /* ──────► React SPA (static files)
 ```
 
-## Features
+All three services communicate over the **`skillsync-network`** bridge network. The browser only talks to nginx — the backend and database are not directly reachable from outside Docker except for the exposed backend port (useful for inspecting the API directly).
 
-- **Multi-Step Preference Form:** Intuitive workflow for entering project needs and preferences
-- **Intelligent Matching:** Weighted algorithm evaluating 7 compatibility dimensions
-- **Multiple Ranked Results:** View all potential matches, not just the top one
-- **Detailed Score Breakdown:** Understand exactly how each score was calculated
-- **Match Explanations:** Clear reasons why each collaborator was recommended
-- **Trade-Off Insights:** Honest assessment of potential compatibility concerns
-- **Responsive Design:** Works on desktop and mobile devices
-- **Error Handling:** Graceful handling of edge cases and failures
+### Container Breakdown
+
+| Container             | Base Image                      | Role                                      |
+|-----------------------|---------------------------------|-------------------------------------------|
+| `skillsync-database`  | `postgres:15-alpine`            | Persistent data store                     |
+| `skillsync-backend`   | `python:3.11-slim`              | FastAPI REST API + matching engine        |
+| `skillsync-frontend`  | `node:18-alpine` → `nginx:alpine` | React SPA build + nginx reverse proxy   |
+
+---
+
+## Technology Stack
+
+### Backend (Python)
+- **FastAPI** — REST API framework with automatic OpenAPI documentation
+- **SQLAlchemy 2.0** — ORM with PostgreSQL
+- **Pydantic v2** — Request and response validation with field validators
+- **psycopg2-binary** — PostgreSQL driver
+- **Uvicorn** — ASGI server
+
+### Frontend (TypeScript)
+- **React 18** with TypeScript (strict mode)
+- **Vite** — Build tool with dev-server proxy
+- **nginx** — Production static file server + `/api` reverse proxy
+
+### Infrastructure
+- **Docker + Docker Compose** — Container orchestration with custom network
+- **PostgreSQL 15** — Relational database with persistent volume
+
+---
 
 ## Matching Algorithm
 
-### Overview
+The matching engine (`backend/app/services/matching_engine.py`) uses a **weighted multi-criteria scoring model**. It is deterministic — the same preferences always produce the same ranked output.
 
-SkillSync uses a deterministic, weighted scoring algorithm that evaluates collaborators across seven compatibility dimensions. No machine learning or AI is used—every score is calculable, explainable, and reproducible.
+### Scoring Dimensions and Weights
 
-### Scoring Dimensions
+| Dimension            | Weight | Scoring Method                                                   |
+|----------------------|--------|------------------------------------------------------------------|
+| Skills               | 35 %   | Needed-skills coverage (70 %) + complementary skills bonus (30 %) |
+| Interests            | 20 %   | Jaccard similarity on project domain sets                        |
+| Availability         | 15 %   | Linear ratio of weekly hours (penalises large excess)            |
+| Collaboration Style  | 10 %   | Pairwise compatibility matrix (collaborative / independent / flexible) |
+| Communication        | 10 %   | Pairwise compatibility matrix (async / sync / hybrid)            |
+| Timezone             | 5 %    | UTC offset distance mapped to a step-function score              |
+| Experience Level     | 5 %    | Ordinal distance on a 4-level scale (junior → lead)              |
 
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| **Skills** | 35% | Coverage of needed skills + complementary skills value |
-| **Project Interests** | 20% | Shared domains using Jaccard similarity |
-| **Availability** | 15% | Weekly hours compatibility |
-| **Collaboration Style** | 10% | Working style compatibility matrix |
-| **Communication** | 10% | Preference compatibility matrix |
-| **Timezone** | 5% | UTC offset distance scoring |
-| **Experience** | 5% | Level proximity scoring |
+### Score Colour Coding
 
-### Example Calculation
+| Range   | Colour | Meaning                                              |
+|---------|--------|------------------------------------------------------|
+| 70–100% | Green  | Strong match — high compatibility across dimensions  |
+| 45–69%  | Amber  | Moderate match — good on some, gaps on others        |
+| 0–44%   | Red    | Weak match — significant compatibility concerns      |
 
-**User needs:** React, Node.js  
-**Profile has:** React (advanced), Node.js (advanced), PostgreSQL, Docker
+Each result includes matched skills, complementary skills, shared interests, plain-English match reasons, and honest trade-off assessments.
 
-**Skills Score:**
-- Needed coverage: 2/2 = 100%
-- Complementary skills: 2 additional skills
-- Formula: (100% × 0.7) + (2 × 0.05 × 0.3) = 73%
-- Weighted: 73 × 0.35 = 25.55 points
+---
 
-This process repeats for all dimensions, and the final overall score = sum of weighted scores.
+## API Reference
 
-### Key Features
+Base URL: `http://localhost:8000`
+Interactive Swagger docs: `http://localhost:8000/docs`
 
-- **Deterministic:** Same inputs always produce same outputs
-- **Explainable:** Every score includes breakdown and reasoning
-- **Balanced:** Weights prevent any single factor from dominating
-- **Transparent:** Users see exactly why a match was recommended
+| Method | Endpoint               | Description                                    |
+|--------|------------------------|------------------------------------------------|
+| GET    | `/api/health`          | Service health check                           |
+| GET    | `/api/options`         | All valid form options (skills, interests …)   |
+| GET    | `/api/profiles`        | List all 40 collaborator profiles              |
+| GET    | `/api/profiles/{id}`   | Single profile by ID                           |
+| POST   | `/api/matches`         | Find ranked matches for given preferences      |
 
-### Trade-offs and Considerations
+### POST /api/matches — Example Request
 
-Each match result includes:
-- **Match Reasons:** Positive compatibility factors
-- **Trade-offs:** Honest assessments of potential concerns
-- **Matched Skills:** Directly needed skills the profile provides
-- **Complementary Skills:** Additional valuable skills
-- **Shared Interests:** Common project domains
-
-## API Documentation
-
-### Endpoints
-
-**GET /api/health**  
-Health check endpoint.
-
-**GET /api/options**  
-Returns all valid form options (skills, interests, experience levels, etc.).
-
-**GET /api/profiles**  
-Returns all collaborator profiles (limit: 50).
-
-**GET /api/profiles/{id}**  
-Returns a single profile by ID.
-
-**POST /api/matches**  
-Find matching collaborators based on preferences.
-
-**Request Body:**
 ```json
 {
-  "user_skills": ["Python", "React"],
-  "needed_skills": ["Node.js", "PostgreSQL"],
-  "project_interests": ["Web Development"],
+  "user_skills": ["React", "TypeScript"],
+  "needed_skills": ["Python", "FastAPI"],
+  "project_interests": ["SaaS Products", "API Development"],
   "preferred_experience": "mid-level",
   "weekly_availability": 20,
-  "timezone": "UTC+5:30",
+  "timezone": "UTC+1",
   "preferred_team_size": "small (2-3)",
   "collaboration_style": "collaborative",
   "communication_preference": "hybrid"
 }
 ```
 
-**Interactive API Docs:** http://localhost:8000/docs
+---
 
-## Testing
+## Database
 
-### Running Backend Tests
+Seeded automatically on first startup with **40 synthetic collaborator profiles** covering:
+
+- **55 skills** across 8 categories (frontend, backend, database, devops, data, design, mobile, tools)
+- **20 project interest domains** (Web Development, AI & Machine Learning, FinTech, Healthcare Tech …)
+- **4 experience levels**: junior, mid-level, senior, lead
+- **Global timezone spread**: UTC-8 through UTC+9
+- **3 collaboration styles**: collaborative, independent, flexible
+- **3 communication preferences**: async, sync, hybrid
+
+All profiles are original synthetic data — no real user data or third-party databases were used.
+
+---
+
+## Project Structure
+
+```
+SkillSync-JTP/
+├── backend/
+│   ├── app/
+│   │   ├── api/endpoints.py         # REST API endpoints
+│   │   ├── core/config.py           # App settings and CORS configuration
+│   │   ├── database/
+│   │   │   ├── init_db.py           # Schema creation + 40 synthetic profiles
+│   │   │   └── session.py           # SQLAlchemy engine, session, retry logic
+│   │   ├── models/collaborator.py   # ORM models (profiles, skills, interests)
+│   │   ├── schemas/matching.py      # Pydantic v2 schemas with field validators
+│   │   ├── services/
+│   │   │   └── matching_engine.py   # Core weighted matching algorithm
+│   │   └── main.py                  # FastAPI app with lifespan context manager
+│   ├── tests/
+│   │   └── test_matching_engine.py  # 24 unit tests for all scoring functions
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/MultiSelect.tsx
+│   │   ├── pages/
+│   │   │   ├── Landing.tsx          # Hero, features, algorithm explanation
+│   │   │   ├── MatchingWizard.tsx   # 5-step preference form with category filters
+│   │   │   └── Results.tsx          # Ranked results with colour-coded score bars
+│   │   ├── services/api.ts          # Typed API client (uses nginx proxy)
+│   │   ├── styles/App.css           # Custom stylesheet
+│   │   ├── types/index.ts           # TypeScript type definitions
+│   │   └── App.tsx                  # Root component with view routing
+│   ├── nginx.conf                   # nginx with /api proxy to backend
+│   ├── Dockerfile                   # Multi-stage build (node → nginx)
+│   └── vite.config.ts               # Vite config with dev-server /api proxy
+├── docker-compose.yml               # Three-container orchestration
+└── README.md
+```
+
+---
+
+## Running Tests
 
 ```bash
 cd backend
 pip install -r requirements.txt
-pytest
+pytest tests/ -v
 ```
 
-### Test Coverage
-
-The test suite includes:
-- Scoring weight validation (must sum to 100%)
-- Individual dimension score calculations
-- Score boundary checks (0-100 range)
-- Deterministic behavior verification
-- Edge case handling (empty inputs, mismatches)
-- Tie-breaking logic
-
-### Manual Testing Checklist
-
-1. Start application: `docker compose up`
-2. Access frontend: http://localhost:5173
-3. Complete all 5 form steps
-4. Submit and verify matches appear
-5. Expand score breakdowns
-6. Test "Adjust Preferences" button
-7. Verify no console errors
-
-## Database Schema
-
-### Tables
-
-**collaborator_profiles**
-- Core profile information (name, title, bio, experience, availability, timezone, preferences)
-
-**skills**
-- Skill catalog with categories (frontend, backend, devops, etc.)
-
-**project_interests**
-- Project domain catalog with descriptions
-
-**profile_skills** (junction table)
-- Many-to-many relationship between profiles and skills
-- Includes proficiency_level (beginner, intermediate, advanced, expert)
-
-**profile_interests** (junction table)
-- Many-to-many relationship between profiles and interests
-
-### Data Seeding
-
-The application includes 40 original synthetic collaborator profiles with:
-- Diverse skill combinations across 55+ skills
-- Multiple project interests from 20 domains
-- Varied experience levels (junior to lead)
-- Different availability (10-35 hours/week)
-- Global timezone coverage
-- Mixed working style preferences
-
-Seeding is automatic and idempotent—the database initializes on first startup and persists through restarts.
-
-## Known Limitations
-
-1. **No Authentication:** No user accounts or login system (out of scope)
-2. **Static Profiles:** Profiles are seeded, no admin interface to add/edit
-3. **No Real-time Updates:** Results are request/response, not live
-4. **Single Instance:** Database is single-instance, no replication or sharding
-5. **Limited Mobile Optimization:** Responsive but optimized for desktop
-
-## Future Improvements
-
-- User account system and authentication
-- Profile creation and management
-- Messaging between matched collaborators
-- Save search preferences and match history
-- Advanced filtering before matching
-- Customizable scoring weights
-- Admin dashboard with analytics
-- Comprehensive integration and E2E tests
-- Performance optimizations (caching, indexing)
-- Internationalization (i18n)
-
-## Troubleshooting
-
-**Problem:** Backend fails to connect to database  
-**Solution:** Wait 30 seconds for database initialization, check `docker compose logs database`
-
-**Problem:** Frontend shows "Failed to load options"  
-**Solution:** Ensure backend is healthy: `curl http://localhost:8000/api/health`
-
-**Problem:** Port already in use  
-**Solution:** Stop conflicting services or change ports in `docker-compose.yml`
-
-**Problem:** Seed data duplicated  
-**Solution:** The seed function is idempotent. If duplicates appear, run `docker compose down -v` to reset volumes.
-
-**Problem:** Frontend not updating after code changes  
-**Solution:** Rebuild frontend: `docker compose up --build frontend`
-
-
-## Originality Statement
-
-This project was built entirely from scratch specifically for the JTP 2026 Project Round. All components are original work:
-
-- **Code:** All backend Python code, frontend React/TypeScript code, and configuration files were written specifically for this project
-- **UI Design:** Original custom CSS designed for SkillSync, no templates or third-party UI libraries used
-- **Data:** 40 synthetic collaborator profiles created specifically for this project, no real profiles or external datasets used
-- **Architecture:** Original system design and implementation
-- **Documentation:** All documentation written for this project
-
-No code was copied from GitHub repositories, online tutorials, or other projects. No third-party templates, cloned repositories, or downloaded UI kits were used.
-
-## Compliance
-
-- **Backend Language:** Python ✓
-- **Frontend Framework:** React (modern JavaScript framework) ✓
-- **Architecture:** Frontend, backend, and database in separate Docker containers ✓
-- **Communication:** Frontend and backend communicate through REST API ✓
-- **Docker Network:** Custom bridge network (skillsync-network) ✓
-- **Startup Command:** `docker compose up` ✓
-- **Git Version Control:** Complete commit history from project start ✓
-- **Documentation:** README.md, REVIEW_GUIDE.md, code docstrings ✓
-- **No AI/ML:** Deterministic weighted algorithm, no machine learning ✓
-- **Original Dataset:** Synthetic profiles created for this project ✓
-
-## License
-
-MIT License - Created for JTP 2026 Project Round
+24 unit tests cover all scoring functions, boundary conditions (0–100 range), and determinism guarantees.
 
 ---
 
-**For detailed review preparation, see [REVIEW_GUIDE.md](./REVIEW_GUIDE.md)**
+## Local Development (without Docker)
+
+**Backend:**
+```bash
+cd backend
+pip install -r requirements.txt
+# Provide a local PostgreSQL instance via DATABASE_URL env var
+DATABASE_URL=postgresql://user:pass@localhost:5432/skillsync uvicorn app.main:app --reload
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev   # Vite's proxy forwards /api requests to localhost:8000
+```
+
+---
+
+## AI Tools Disclosure
+
+This project was developed with the assistance of Claude (Anthropic). All code was reviewed, understood, and can be explained by the submitter. The architecture, algorithm design, and data are original work.
+
+---
+
+## Data Sources
+
+All 40 collaborator profiles are **original synthetic data** created specifically for this project. No real user data, third-party profile databases, or scraped content was used. Skill and interest names are generic industry terms.
+
+---
+
+## License
+
+MIT License — see `LICENSE` for details.
+
+---
+
+*SkillSync — JTP 2026 Project Round · Matching / Recommendation Service*

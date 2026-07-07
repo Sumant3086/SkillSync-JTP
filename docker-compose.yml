@@ -28,7 +28,7 @@ services:
     container_name: skillsync-backend
     environment:
       DATABASE_URL: postgresql://skillsync_user:skillsync_password@database:5432/skillsync_db
-      PYTHONUNBUFFERED: 1
+      PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
     depends_on:
@@ -44,7 +44,7 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-  # React Frontend
+  # React Frontend — served by nginx which also proxies /api to the backend
   frontend:
     build:
       context: ./frontend
@@ -56,8 +56,6 @@ services:
       - backend
     networks:
       - skillsync-network
-    environment:
-      VITE_API_BASE_URL: http://localhost:8000
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
       interval: 30s
@@ -66,13 +64,13 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-# Custom Docker network
+# Custom Docker network connecting all three containers
 networks:
   skillsync-network:
     driver: bridge
     name: skillsync-network
 
-# Persistent volume for database
+# Persistent volume for PostgreSQL data
 volumes:
   postgres_data:
     name: skillsync-postgres-data

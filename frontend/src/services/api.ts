@@ -1,8 +1,10 @@
-// API client for SkillSync backend
+// API client for SkillSync backend.
+// In Docker: requests go to the nginx proxy (same origin, no CORS).
+// In dev (npm run dev): Vite proxy forwards /api/* to localhost:8000.
 
 import { MatchPreferences, MatchResponse, Options } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
