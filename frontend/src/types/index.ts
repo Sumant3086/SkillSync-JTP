@@ -20,6 +20,7 @@ export interface ScoreBreakdown {
   communication: number;
   timezone: number;
   experience: number;
+  team_size: number;
 }
 
 export interface MatchResult {

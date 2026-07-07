@@ -9,6 +9,7 @@ from app.services.matching_engine import (
     calculate_experience_score,
     calculate_collaboration_score,
     calculate_communication_score,
+    calculate_team_size_score,
     calculate_consistency_bonus,
     SCORING_WEIGHTS,
     PROFICIENCY_WEIGHTS,
@@ -306,6 +307,34 @@ def test_consistency_bonus_range():
     for scores in test_cases:
         bonus = calculate_consistency_bonus(scores)
         assert -3.0 <= bonus <= 3.0, f"Bonus {bonus} out of [-3, 3] for scores {scores}"
+
+
+# ── Team size scoring ─────────────────────────────────────────────────────────
+
+def test_team_size_score_exact_match():
+    assert calculate_team_size_score("small (2-3)", "small (2-3)") == 100.0
+
+
+def test_team_size_score_one_step():
+    """Adjacent sizes score 65."""
+    assert calculate_team_size_score("small (2-3)", "medium (4-6)") == 65.0
+    assert calculate_team_size_score("medium (4-6)", "large (7+)") == 65.0
+
+
+def test_team_size_score_two_steps():
+    """Opposite ends score 30."""
+    assert calculate_team_size_score("small (2-3)", "large (7+)") == 30.0
+
+
+def test_team_size_score_no_preference():
+    """Empty preference returns neutral 50."""
+    assert calculate_team_size_score("", "medium (4-6)") == 50.0
+
+
+def test_team_size_in_scoring_weights():
+    """team_size must be a weighted dimension (closing the v1/v2 gap)."""
+    assert "team_size" in SCORING_WEIGHTS
+    assert SCORING_WEIGHTS["team_size"] > 0
 
 
 # ── Cross-cutting ─────────────────────────────────────────────────────────────

@@ -76,6 +76,7 @@ class ScoreBreakdown(BaseModel):
     communication: float
     timezone: float
     experience: float
+    team_size: float
 
 
 class MatchResult(BaseModel):

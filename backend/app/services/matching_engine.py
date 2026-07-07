@@ -1,5 +1,5 @@
 """
-Explainable Collaborator Matching Engine — v2.
+Explainable Collaborator Matching Engine — v3.
 
 Improvements over v1:
   - Proficiency-weighted skill scoring (beginner → expert matters)
@@ -8,7 +8,8 @@ Improvements over v1:
   - Smooth exponential timezone decay (no arbitrary step-band cliffs)
   - Asymmetric experience scoring (over-experienced < under-experienced penalty)
   - Consistency bonus (balanced profiles beat one-trick-ponies)
-  - Richer match-reason generation
+  - Team size preference now scored (was collected but ignored in v1/v2)
+  - Richer, more specific match-reason generation
 """
 import math
 import statistics
@@ -20,13 +21,14 @@ from app.models.collaborator import CollaboratorProfile, Skill, profile_skills a
 
 # ── Scoring weights (must sum to 1.0) ──────────────────────────────────────
 SCORING_WEIGHTS = {
-    "skills":              0.35,
-    "interests":           0.20,
-    "availability":        0.15,
-    "collaboration_style": 0.10,
-    "communication":       0.10,
+    "skills":              0.33,
+    "interests":           0.18,
+    "availability":        0.14,
+    "collaboration_style": 0.09,
+    "communication":       0.09,
     "timezone":            0.05,
     "experience":          0.05,
+    "team_size":           0.07,   # previously collected but unscored
 }
 
 # Proficiency → numeric multiplier used in skill scoring
@@ -299,6 +301,35 @@ def calculate_collaboration_score(user_style: str, profile_style: str) -> float:
     return float(matrix.get((user_style, profile_style), 50))
 
 
+def calculate_team_size_score(user_preference: str, profile_preference: str) -> float:
+    """
+    Calculate team size preference alignment.
+
+    Scoring:
+    - Exact match: 100
+    - One step apart (small↔medium or medium↔large): 65
+    - Two steps apart (small↔large): 30
+
+    Args:
+        user_preference: Preferred team size string (e.g. "small (2-3)").
+        profile_preference: Profile's preferred team size string.
+
+    Returns:
+        Compatibility score (0-100).
+    """
+    if not user_preference:
+        return 50.0
+
+    sizes = ["small (2-3)", "medium (4-6)", "large (7+)"]
+    try:
+        user_idx = sizes.index(user_preference)
+        profile_idx = sizes.index(profile_preference)
+        diff = abs(user_idx - profile_idx)
+        return {0: 100.0, 1: 65.0, 2: 30.0}.get(diff, 50.0)
+    except ValueError:
+        return 50.0
+
+
 def calculate_communication_score(user_comm: str, profile_comm: str) -> float:
     """
     Calculate communication preference compatibility.
@@ -359,38 +390,58 @@ def generate_match_reasons(
     skill_score: float,
     interest_score: float,
     availability_score: float,
+    timezone_score: float,
+    collaboration_score: float,
+    communication_score: float,
+    team_size_score: float,
     matched_skills: List[str],
     shared_interests: List[str],
     complementary_skills: List[str],
 ) -> List[str]:
-    """Generate positive, human-readable match reasons from dimension scores."""
+    """Generate specific, human-readable positive reasons from dimension scores."""
     reasons: List[str] = []
 
     if skill_score >= 80 and matched_skills:
         n = len(matched_skills)
+        skills_str = ", ".join(matched_skills[:3])
         reasons.append(
-            f"Covers {n} of your required skill{'s' if n > 1 else ''} at a good proficiency level"
+            f"Covers {n} required skill{'s' if n > 1 else ''}: {skills_str}"
         )
     elif skill_score >= 55 and matched_skills:
-        reasons.append(f"Partial skill overlap on {len(matched_skills)} needed skill{'s' if len(matched_skills) > 1 else ''}")
+        reasons.append(
+            f"Partial skill match — covers {len(matched_skills)} of your needed skills"
+        )
 
     if complementary_skills:
+        n = len(complementary_skills)
         reasons.append(
-            f"Brings {len(complementary_skills)} additional skill{'s' if len(complementary_skills) > 1 else ''} you don't have"
+            f"Brings {n} complementary skill{'s' if n > 1 else ''} you don't have: "
+            f"{', '.join(complementary_skills[:2])}"
         )
 
     if interest_score >= 65 and shared_interests:
-        top = shared_interests[:2]
-        reasons.append(
-            f"Shares key interests: {', '.join(top)}"
-        )
+        reasons.append(f"Shares interests in {', '.join(shared_interests[:2])}")
 
-    if availability_score >= 90:
-        reasons.append("Availability aligns well with your weekly hours")
-    elif availability_score >= 70:
-        reasons.append("Reasonable availability match")
+    if availability_score >= 95:
+        reasons.append("Availability is an excellent fit for your weekly hours")
+    elif availability_score >= 75:
+        reasons.append("Good availability alignment")
 
-    return reasons if reasons else ["General compatibility across multiple dimensions"]
+    if timezone_score >= 90:
+        reasons.append("Same or very close timezone — easy real-time collaboration")
+    elif timezone_score >= 75:
+        reasons.append("Compatible timezone with manageable overlap")
+
+    if collaboration_score >= 90:
+        reasons.append("Working style aligns well")
+
+    if communication_score >= 90:
+        reasons.append("Communication preference matches")
+
+    if team_size_score == 100:
+        reasons.append("Prefers the same team size")
+
+    return reasons if reasons else ["Moderate overall compatibility across dimensions"]
 
 
 def generate_trade_offs(
@@ -401,8 +452,9 @@ def generate_trade_offs(
     experience_score: float,
     collaboration_score: float,
     communication_score: float,
+    team_size_score: float,
 ) -> List[str]:
-    """Generate honest trade-off notes for low-scoring dimensions."""
+    """Generate honest trade-off notes for dimensions with low compatibility."""
     trade_offs: List[str] = []
 
     if skill_score < 50:
@@ -412,13 +464,15 @@ def generate_trade_offs(
     if availability_score < 50:
         trade_offs.append("Availability may not meet your weekly hours requirement")
     if timezone_score < 50:
-        trade_offs.append("Significant timezone difference — async-first collaboration recommended")
+        trade_offs.append("Significant timezone gap — async-first collaboration recommended")
     if experience_score < 50:
         trade_offs.append("Experience level differs considerably from your preference")
     if collaboration_score < 60:
         trade_offs.append("Different preferred collaboration styles")
     if communication_score < 60:
         trade_offs.append("Different communication preferences")
+    if team_size_score < 65:
+        trade_offs.append("Different preferred team sizes")
 
     return trade_offs
 
@@ -531,6 +585,10 @@ def find_matches(
             communication_preference, profile.communication_preference
         )
 
+        team_size_score = calculate_team_size_score(
+            preferred_team_size, profile.preferred_team_size
+        )
+
         # Weighted overall score
         overall = (
             skill_score         * SCORING_WEIGHTS["skills"]
@@ -540,13 +598,14 @@ def find_matches(
             + communication_score * SCORING_WEIGHTS["communication"]
             + timezone_score      * SCORING_WEIGHTS["timezone"]
             + experience_score    * SCORING_WEIGHTS["experience"]
+            + team_size_score     * SCORING_WEIGHTS["team_size"]
         )
 
         # Consistency adjustment: balanced profiles get a small bonus/penalty
         all_scores = [
             skill_score, interest_score, availability_score,
             timezone_score, experience_score,
-            collaboration_score, communication_score,
+            collaboration_score, communication_score, team_size_score,
         ]
         consistency = calculate_consistency_bonus(all_scores)
         overall_score = round(max(0.0, min(100.0, overall + consistency)), 1)
@@ -554,12 +613,14 @@ def find_matches(
         # Generate human-readable explanations
         match_reasons = generate_match_reasons(
             skill_score, interest_score, availability_score,
+            timezone_score, collaboration_score, communication_score,
+            team_size_score,
             matched_skills, shared_interests, complementary_skills,
         )
         trade_offs = generate_trade_offs(
             skill_score, interest_score, availability_score,
             timezone_score, experience_score,
-            collaboration_score, communication_score,
+            collaboration_score, communication_score, team_size_score,
         )
 
         matches.append({
@@ -583,6 +644,7 @@ def find_matches(
                 "communication":       round(communication_score, 1),
                 "timezone":            round(timezone_score, 1),
                 "experience":          round(experience_score, 1),
+                "team_size":           round(team_size_score, 1),
             },
             "matched_skills":       matched_skills,
             "complementary_skills": complementary_skills,
