@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
 import { MatchPreferences, Options, MatchResponse } from '../types';
+import { api } from '../services/api';
 import MultiSelect from '../components/MultiSelect';
 
 interface MatchingWizardProps {
+  options: Options | null;
+  optionsError: string | null;
   onComplete: (results: MatchResponse) => void;
   onBack: () => void;
 }
@@ -27,12 +29,13 @@ const SKILL_CATEGORIES: Record<string, string> = {
   tools: 'Tools & Practices',
 };
 
-function MatchingWizard({ onComplete, onBack }: MatchingWizardProps) {
+function MatchingWizard({ options, optionsError, onComplete, onBack }: MatchingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [options, setOptions] = useState<Options | null>(null);
   const [skillCategory, setSkillCategory] = useState<string>('all');
+  const [waitSeconds, setWaitSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [preferences, setPreferences] = useState<MatchPreferences>({
     user_skills: [],
@@ -46,11 +49,15 @@ function MatchingWizard({ onComplete, onBack }: MatchingWizardProps) {
     communication_preference: '',
   });
 
+  // Track how long we've been waiting so we can show a cold-start hint
   useEffect(() => {
-    api.getOptions()
-      .then(data => setOptions(data))
-      .catch(() => setError('Failed to load options. Please refresh the page.'));
-  }, []);
+    if (options || optionsError) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    timerRef.current = setInterval(() => setWaitSeconds(s => s + 1), 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [options, optionsError]);
 
   const handleNext = () => {
     if (currentStep < STEPS.length) setCurrentStep(currentStep + 1);
@@ -75,11 +82,30 @@ function MatchingWizard({ onComplete, onBack }: MatchingWizardProps) {
     }
   };
 
+  if (optionsError) {
+    return (
+      <div className="loading">
+        <p className="loading-text" style={{ color: 'var(--danger)' }}>{optionsError}</p>
+        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={onBack}>
+          ← Back to Home
+        </button>
+      </div>
+    );
+  }
+
   if (!options) {
     return (
       <div className="loading">
         <div className="spinner" />
         <p className="loading-text">Loading options…</p>
+        {waitSeconds >= 4 && (
+          <p className="loading-sub">
+            The service is waking up — first load can take 20–40 s on the free tier.
+          </p>
+        )}
+        {waitSeconds >= 20 && (
+          <p className="loading-sub">Still warming up, almost there…</p>
+        )}
       </div>
     );
   }

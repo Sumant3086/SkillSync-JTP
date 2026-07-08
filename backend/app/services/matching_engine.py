@@ -536,16 +536,18 @@ def find_matches(
         for name, count in freq_rows
     }
 
+    # Pre-fetch all profile→skill proficiency rows in a single query (avoids N+1)
+    all_prof_rows = db.execute(ps_table.select()).fetchall()
+    proficiency_by_profile: Dict[int, Dict[int, str]] = {}
+    for row in all_prof_rows:
+        proficiency_by_profile.setdefault(row.profile_id, {})[row.skill_id] = row.proficiency_level
+
     # ── Step 2-5: Score every profile ────────────────────────────────────────
     matches: List[Dict[str, Any]] = []
 
     for profile in profiles:
-        # Build name → proficiency dict for this profile
-        prof_skill_rows = db.execute(
-            ps_table.select().where(ps_table.c.profile_id == profile.id)
-        ).fetchall()
-
-        id_to_proficiency = {row.skill_id: row.proficiency_level for row in prof_skill_rows}
+        # Build name → proficiency dict for this profile using pre-fetched data
+        id_to_proficiency = proficiency_by_profile.get(profile.id, {})
 
         profile_skill_names: Dict[str, str] = {
             skill.name: id_to_proficiency.get(skill.id, "intermediate")

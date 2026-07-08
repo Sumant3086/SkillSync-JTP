@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Landing from './pages/Landing';
 import MatchingWizard from './pages/MatchingWizard';
 import Results from './pages/Results';
-import { MatchResponse } from './types';
+import { MatchResponse, Options } from './types';
+import { api } from './services/api';
 import './styles/App.css';
 
 type View = 'landing' | 'wizard' | 'results';
@@ -10,6 +11,16 @@ type View = 'landing' | 'wizard' | 'results';
 function App() {
   const [view, setView] = useState<View>('landing');
   const [matchResults, setMatchResults] = useState<MatchResponse | null>(null);
+  const [options, setOptions] = useState<Options | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+
+  // Pre-fetch options on mount so the backend wakes up while the user reads
+  // the landing page — eliminates the cold-start wait on the wizard screen.
+  useEffect(() => {
+    api.getOptions()
+      .then(setOptions)
+      .catch(() => setOptionsError('Failed to load options. Please refresh the page.'));
+  }, []);
 
   const handleStartMatching = () => setView('wizard');
 
@@ -42,7 +53,12 @@ function App() {
       <main className="container">
         {view === 'landing' && <Landing onStart={handleStartMatching} />}
         {view === 'wizard' && (
-          <MatchingWizard onComplete={handleMatchComplete} onBack={handleBackToHome} />
+          <MatchingWizard
+            options={options}
+            optionsError={optionsError}
+            onComplete={handleMatchComplete}
+            onBack={handleBackToHome}
+          />
         )}
         {view === 'results' && matchResults && (
           <Results
