@@ -235,6 +235,23 @@ All 40 collaborator profiles are **original synthetic data** created specificall
 
 ---
 
+## Deploy to Render (Single Web Service)
+
+Click the button below to deploy to Render with one click:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Sumant3086/SkillSync-JTP)
+
+Or manually:
+1. Fork/Push this repo to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com/)
+3. Click "New +" → "Blueprint"
+4. Connect your GitHub repository
+5. Render will automatically detect `render.yaml` and deploy everything
+6. Wait 5-10 minutes for build and deployment
+7. Access your app at the provided Render URL
+
+---
+
 ## License
 
 MIT License — see `LICENSE` for details.

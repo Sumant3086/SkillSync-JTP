@@ -22,8 +22,10 @@ class Settings(BaseSettings):
         "http://localhost:80",
         "http://localhost:5173",
         "http://localhost:8000",
+        "http://localhost:10000",
         "http://frontend",
         "http://frontend:80",
+        "https://*.onrender.com",  # For Render deployment
     ]
 
     model_config = {"case_sensitive": True}

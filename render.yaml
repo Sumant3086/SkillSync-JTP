@@ -1,0 +1,26 @@
+# Render Blueprint for SkillSync
+# This configures a single web service with PostgreSQL database
+
+services:
+  # Main web service (combines frontend + backend)
+  - type: web
+    name: skillsync
+    env: docker
+    dockerfilePath: ./Dockerfile.render
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillsync-db
+          property: connectionString
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PORT
+        value: "10000"
+    healthCheckPath: /api/health
+
+databases:
+  # PostgreSQL database
+  - name: skillsync-db
+    databaseName: skillsync_db
+    user: skillsync_user
+    plan: free

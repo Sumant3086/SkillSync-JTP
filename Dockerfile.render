@@ -1,0 +1,51 @@
+# Multi-stage Dockerfile for Render - Single Service
+# This combines frontend build, backend, and serves everything together
+
+# Stage 1: Build Frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Backend with Frontend
+FROM python:3.11-slim
+
+# Install system dependencies including nginx
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    curl \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy backend requirements and install
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend code
+COPY backend/ .
+
+# Copy built frontend from stage 1
+COPY --from=frontend-builder /frontend/dist /app/frontend-dist
+
+# Copy nginx configuration
+COPY render-nginx.conf /etc/nginx/sites-available/default
+
+# Create startup script
+COPY render-start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Expose port (Render assigns this dynamically via $PORT)
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Start script will run nginx and uvicorn
+CMD ["/app/start.sh"]

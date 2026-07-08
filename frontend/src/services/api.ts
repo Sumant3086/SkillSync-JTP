@@ -4,6 +4,8 @@
 
 import { MatchPreferences, MatchResponse, Options } from '../types';
 
+// For Render deployment, API is on same domain
+// For local dev, uses Vite proxy or empty string
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 class ApiError extends Error {
