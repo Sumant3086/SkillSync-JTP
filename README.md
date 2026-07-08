@@ -25,7 +25,7 @@ SkillSync is a full-stack web application that matches developers and technical 
 
 ## Live Demo
 
-**Deployed URL:** https://skillsync-jtp.onrender.com
+**Deployed URL:** https://skillsync-h76d.onrender.com
 
 > **Note:** The service runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after a cold start may take 20–40 seconds. The app shows a warm-up message automatically.
 

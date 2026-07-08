@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Platform:** Web browser (desktop and tablet recommended)  
-**Live URL:** https://skillsync-jtp.onrender.com
+**Live URL:** https://skillsync-h76d.onrender.com
 
 ---
 
@@ -46,7 +46,7 @@ SkillSync helps you find compatible project collaborators by going beyond simple
 
 ### Opening the App
 
-1. Open a web browser and go to **https://skillsync-jtp.onrender.com**
+1. Open a web browser and go to **https://skillsync-h76d.onrender.com**
 2. You will see the SkillSync landing page with an overview of how the platform works.
 
 ### First Visit — Service Warm-Up
